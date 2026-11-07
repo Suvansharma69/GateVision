@@ -462,3 +462,4 @@ See [`LICENSE`](LICENSE) for details.
 <div align="center">
 Made with ❤️ | Real-time vehicle intelligence
 </div>
+
