@@ -1,15 +1,17 @@
-# 🚗 GateVision — Smart Vehicle Entry/Exit Intelligence System
-
 <div align="center">
 
-![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)
-![YOLOv8](https://img.shields.io/badge/YOLOv8-Ultralytics-purple?logo=data:image/svg+xml;base64,)
-![Flask](https://img.shields.io/badge/Flask-3.0-black?logo=flask)
-![MongoDB](https://img.shields.io/badge/MongoDB-7.0-green?logo=mongodb)
-![OpenCV](https://img.shields.io/badge/OpenCV-4.8-red?logo=opencv)
-![License](https://img.shields.io/badge/License-MIT-yellow)
+# 🚗 GateVision
 
-**A production-ready, real-time vehicle intelligence system that detects license plates, tracks entry/exit events, logs timestamps, and streams everything to a live web dashboard — all backed by MongoDB.**
+### Smart Vehicle Entry/Exit Intelligence System
+
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://python.org)
+[![YOLOv8](https://img.shields.io/badge/YOLOv8-Ultralytics-7B2FBE)](https://ultralytics.com)
+[![Flask](https://img.shields.io/badge/Flask-3.0-000000?logo=flask)](https://flask.palletsprojects.com)
+[![MongoDB](https://img.shields.io/badge/MongoDB-7.0-47A248?logo=mongodb&logoColor=white)](https://mongodb.com)
+[![OpenCV](https://img.shields.io/badge/OpenCV-4.8-5C3EE8?logo=opencv)](https://opencv.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-F7CA18)](LICENSE)
+
+**GateVision** watches your gate 24/7. It reads every license plate from a live camera stream, decides whether a vehicle is entering or exiting, records the exact timestamp, and stores the full-colour vehicle image — all searchable in real time from any browser.
 
 </div>
 
@@ -17,14 +19,14 @@
 
 ## 📋 Table of Contents
 
-- [Overview](#-overview)
+- [What GateVision Does](#-what-gatevision-does)
 - [System Architecture](#-system-architecture)
 - [Features](#-features)
 - [Project Structure](#-project-structure)
 - [Prerequisites](#-prerequisites)
 - [Installation](#-installation)
-- [Configuration](#-configuration)
-- [Running the System](#-running-the-system)
+- [Configuration](#-configuration-env)
+- [Running GateVision](#-running-gatevision)
 - [Web Dashboard](#-web-dashboard)
 - [Database Schema](#-database-schema)
 - [Model Training](#-model-training)
@@ -33,61 +35,64 @@
 
 ---
 
-## 🔭 Overview
+## 🔭 What GateVision Does
 
-This project is an end-to-end **automated vehicle surveillance system** that:
+GateVision is an **end-to-end automated gate intelligence system** that:
 
-1. Connects to an **RTSP IP camera** stream.
-2. Runs **YOLOv8** to detect vehicles (cars, trucks, buses, motorcycles) and isolate license plates in every frame.
-3. Applies a **multi-pass OCR ensemble** (Tesseract + image pre-processing) to read the plate text.
-4. Determines whether the vehicle is **entering** or **exiting** using multi-method orientation analysis.
-5. Saves a **full-colour vehicle image + plate close-up** to disk and stores structured records in **MongoDB**.
-6. Presents all data in real time on a **Flask web dashboard** accessible from any browser on the network.
+1. **Connects** to any RTSP IP camera stream
+2. **Detects** every vehicle (car, truck, bus, motorcycle) using **YOLOv8**
+3. **Reads** the license plate text with a smart **multi-pass OCR ensemble**
+4. **Determines** entry vs. exit using multi-method vehicle orientation analysis
+5. **Timestamps** every event with second-level precision
+6. **Saves** a full-colour vehicle image + plate close-up to disk
+7. **Stores** structured records in **MongoDB** for instant querying
+8. **Displays** everything live on a sleek **Flask web dashboard**
 
 ---
 
 ## 🏗 System Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     RTSP IP Camera                          │
-└────────────────────────┬────────────────────────────────────┘
-                         │  RTSP Stream
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│              UltraStableRTSPReader (threaded)                │
-│  • Multi-backend connection (FFmpeg / GStreamer / fallback)  │
+┌──────────────────────────────────────────────────────────────┐
+│                     RTSP IP Camera                           │
+└──────────────────────┬───────────────────────────────────────┘
+                       │  RTSP Stream
+                       ▼
+┌──────────────────────────────────────────────────────────────┐
+│          UltraStableRTSPReader  (threaded reader)            │
+│  • Multi-backend: FFmpeg / GStreamer / fallback              │
 │  • Auto-reconnect on drop                                    │
-│  • Minimal-buffer frame queue (< 3 frames)                  │
-└────────────────────────┬────────────────────────────────────┘
-                         │  Raw frames
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│          EnhancedCarDetector / UltraFastCarDetector          │
-│  ┌──────────────────┐   ┌────────────────────────────────┐  │
-│  │  YOLOv8n (COCO)  │   │  Custom YOLOv8 License-Plate   │  │
-│  │  Vehicle detect  │──▶│  Detector (best.pt)            │  │
-│  └──────────────────┘   └──────────────┬───────────────── ┘  │
-│         │                              │                     │
-│         ▼                              ▼                     │
-│  ┌──────────────┐        ┌──────────────────────────┐       │
-│  │ Orientation  │        │  OCR Ensemble             │       │
-│  │ Detector     │        │  (Tesseract + pre-proc)   │       │
-│  │ front / back │        └──────────────────────────┘       │
-│  └──────────────┘                                           │
-└───────┬──────────────────────────┬──────────────────────────┘
-        │  Images to disk          │  Structured records
-        ▼                          ▼
- ┌────────────┐           ┌─────────────────┐
- │ car_images │           │    MongoDB       │
- │ plate_imgs │           │  enhanced_       │
- │screenshots │           │  vehicle_db      │
- └────────────┘           └────────┬────────┘
-                                   │
-                          ┌────────▼────────┐
-                          │  Flask Dashboard │
-                          │  :5000           │
-                          └─────────────────┘
+│  • Minimal-buffer frame queue (< 3 frames latency)          │
+└──────────────────────┬───────────────────────────────────────┘
+                       │  Raw frames
+                       ▼
+┌──────────────────────────────────────────────────────────────┐
+│          EnhancedCarDetector  (main processing engine)       │
+│                                                              │
+│   YOLOv8n COCO ──▶ Vehicle Bbox ──▶  YOLOv8 best.pt        │
+│   (car/truck/       (cropped)         (plate region)         │
+│    bus/moto)                               │                 │
+│                                           ▼                  │
+│   Orientation ◀── Multi-method      OCR Ensemble            │
+│   Detector         analysis          (Tesseract +            │
+│   (entry/exit)     (plate pos,        pre-processing)        │
+│                     headlights,                              │
+│                     geometry)                                │
+└──────┬───────────────────────────────┬────────────────────── ┘
+       │  Images to disk               │  Structured records
+       ▼                               ▼
+ ┌───────────────┐            ┌─────────────────────┐
+ │  car_images/  │            │   MongoDB            │
+ │  plate_images/│            │   enhanced_          │
+ │  screenshots/ │            │   vehicle_db         │
+ └───────────────┘            └──────────┬───────────┘
+                                         │
+                              ┌──────────▼───────────┐
+                              │   Flask Dashboard     │
+                              │   :5000               │
+                              │   (live video +       │
+                              │    records + search)  │
+                              └──────────────────────┘
 ```
 
 ---
@@ -96,57 +101,61 @@ This project is an end-to-end **automated vehicle surveillance system** that:
 
 | Feature | Detail |
 |---|---|
-| 🎥 **Live RTSP Stream** | Connects to any RTSP camera; auto-reconnects on drop |
-| 🚗 **Vehicle Detection** | YOLOv8n COCO — detects car, truck, bus, motorcycle |
-| 🔖 **Plate Detection** | Custom-trained YOLOv8 model (20 epochs, 640 px) |
-| 📝 **OCR** | Multi-method Tesseract ensemble with image pre-processing |
-| 🔄 **Entry / Exit** | Plate-position + geometry + headlight analysis |
-| 🎨 **Colour Preservation** | All captured images saved in original colour (no greyscale) |
-| 📸 **Image Capture** | Full-car image + plate close-up saved per detection |
-| 🗄 **MongoDB Storage** | Async writes; indexed on plate, timestamp, detection_id |
-| 🧹 **Duplicate Cleanup** | Automatic dedup of repeated detections within configurable window |
-| 🌐 **Web Dashboard** | Real-time Flask UI with live video, stats, records & analytics |
-| ⚡ **GPU Acceleration** | Runs on CUDA if available; falls back to CPU |
-| 🧵 **Multi-threaded** | Stream reader, detector, and Flask server run in separate threads |
+| 🎥 **Live RTSP Stream** | Connects to any IP camera; auto-reconnects on drop |
+| 🚗 **Vehicle Detection** | YOLOv8n COCO — car, truck, bus, motorcycle |
+| 🔖 **Plate Detection** | Custom-trained YOLOv8 (20 epochs, 640 px, Roboflow dataset) |
+| 📝 **Smart OCR** | Multi-pass Tesseract ensemble with adaptive image pre-processing |
+| 🕐 **Timestamping** | Every detection logged with exact date & time |
+| 🔄 **Entry / Exit** | 4-method orientation analysis: plate position + geometry + headlights + features |
+| 🎨 **Colour Preservation** | All images saved in original colour — no greyscale conversion |
+| 📸 **Dual Capture** | Full vehicle image + plate close-up saved per detection |
+| 🗄 **MongoDB Storage** | Async writes; indexed for fast plate/time queries |
+| 🧹 **Auto Dedup** | Smart duplicate cleanup within configurable time window |
+| 🌐 **Web Dashboard** | Real-time Flask UI: live video, stats, records table, image gallery, search |
+| ⚡ **GPU Ready** | CUDA-accelerated if NVIDIA GPU available; CPU fallback |
+| 🔒 **Secure Config** | All credentials in `.env` — nothing hardcoded in source |
+| 🧵 **Multi-threaded** | Stream reader, detector, Flask server run independently |
 
 ---
 
 ## 📁 Project Structure
 
 ```
-no_plate/
+GateVision/
 │
-├── noplate_with_database.py      # ⭐ MAIN: Full system (RTSP + YOLO + OCR + Entry/Exit + MongoDB + Flask)
-├── test.py                       # Enhanced version with duplicate cleanup & optimised streaming
-├── exp.py                        # Experimental version with ultra-fast processing mode
+├── noplate_with_database.py      ⭐ MAIN: Full pipeline (RTSP + YOLO + OCR + Entry/Exit + MongoDB + Flask)
+├── test.py                       Enhanced: adds smart duplicate cleanup + no-frame-skip mode
+├── exp.py                        Experimental: ultra-fast processing with vehicle tracker
 │
-├── live_noplate_screenshot.py    # Standalone: HD screenshots from live stream
-├── live_stream.py                # Standalone: Raw RTSP stream viewer
-├── detect_no_plate.py            # Standalone: Offline video-file inference
+├── live_noplate_screenshot.py    Standalone: HD screenshots from live stream (no DB)
+├── live_stream.py                Utility: raw RTSP viewer / connection tester
+├── detect_no_plate.py            Offline: run inference on a saved video file
 │
-├── train_model.py                # Train/fine-tune the license plate YOLO model
-├── mongodb_setup.py              # Setup helper: seed sample data, test connection
+├── train_model.py                Train / fine-tune the license plate YOLO model
+├── mongodb_setup.py              DB helper: seed sample data, test connection
 │
-├── data.yaml                     # YOLO dataset config (paths, classes)
-├── dashboard.html                # Frontend: Entry/Exit web dashboard (served by Flask)
+├── config.py                     ⚙️  Central config — reads from .env or env vars
+├── .env.example                  📋 Copy → .env, fill in your credentials
 │
-├── requirements.txt              # Python dependencies
+├── data.yaml                     YOLO dataset config (relative paths)
+├── dashboard.html                Frontend: live Entry/Exit dashboard (served by Flask)
+│
+├── requirements.txt              Python dependencies
 ├── .gitignore
+├── LICENSE
 │
-├── runs/                         # YOLO training artefacts
-│   └── detect/
-│       └── license_plate_detection/
-│           ├── weights/
-│           │   └── best.pt       # 🏆 Trained license plate model
-│           ├── results.csv
-│           ├── results.png
-│           ├── F1_curve.png
-│           ├── PR_curve.png
-│           └── confusion_matrix.png
+├── runs/detect/
+│   └── license_plate_detection/
+│       ├── weights/
+│       │   └── best.pt           🏆 Trained license plate model (~5.4 MB)
+│       ├── results.csv / results.png
+│       ├── F1_curve.png / PR_curve.png / P_curve.png / R_curve.png
+│       ├── confusion_matrix.png / confusion_matrix_normalized.png
+│       └── labels.jpg / val_batch*.jpg
 │
-├── screenshots/                  # (auto-created) HD plate screenshots
-├── car_images/                   # (auto-created) Full-car colour images
-└── plate_images/                 # (auto-created) Plate close-ups
+├── screenshots/                  (auto-created) plate screenshots
+├── car_images/                   (auto-created) full-vehicle colour images
+└── plate_images/                 (auto-created) plate close-ups
 ```
 
 ---
@@ -154,30 +163,32 @@ no_plate/
 ## 🔧 Prerequisites
 
 ### System Requirements
-- **OS**: Windows 10/11 (Linux also works with path adjustments)
-- **Python**: 3.10 or higher
-- **RAM**: 8 GB minimum, 16 GB recommended
-- **GPU**: NVIDIA GPU with CUDA 11.8+ (optional but strongly recommended)
+| Requirement | Minimum | Recommended |
+|---|---|---|
+| OS | Windows 10 / Ubuntu 20.04 | Windows 11 / Ubuntu 22.04 |
+| Python | 3.10 | 3.11+ |
+| RAM | 8 GB | 16 GB |
+| GPU | — (CPU works) | NVIDIA with CUDA 11.8+ |
 
 ### External Software
-| Software | Purpose | Download |
+
+| Software | Purpose | Install |
 |---|---|---|
-| [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki) | License plate text recognition | Install to `C:\Program Files\Tesseract-OCR\` |
-| [MongoDB Community](https://www.mongodb.com/try/download/community) | Vehicle record database | Run as a service on `localhost:27017` |
-| [Git LFS](https://git-lfs.github.com/) | Tracking large model files (optional) | Required if cloning `best.pt` via LFS |
+| [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki) | License plate text recognition | Windows: installer to `C:\Program Files\Tesseract-OCR\`<br>Linux: `sudo apt install tesseract-ocr` |
+| [MongoDB Community](https://www.mongodb.com/try/download/community) | Vehicle record database | Run as service on `localhost:27017` |
 
 ---
 
 ## 🚀 Installation
 
-### 1. Clone the Repository
+### 1. Clone
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/vehicle-license-plate-detection.git
-cd vehicle-license-plate-detection
+git clone https://github.com/YOUR_USERNAME/GateVision.git
+cd GateVision
 ```
 
-### 2. Create a Virtual Environment
+### 2. Virtual Environment
 
 ```bash
 python -m venv venv
@@ -189,70 +200,78 @@ venv\Scripts\activate
 source venv/bin/activate
 ```
 
-### 3. Install Python Dependencies
+### 3. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-> **GPU users:** Install PyTorch with CUDA support first:
+> **GPU users** — install PyTorch with CUDA first:
 > ```bash
 > pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
 > ```
 
-### 4. Install Tesseract OCR (Windows)
+### 4. Configure `.env`
 
-Download and install from [UB-Mannheim Tesseract](https://github.com/UB-Mannheim/tesseract/wiki).  
-Default install path: `C:\Program Files\Tesseract-OCR\tesseract.exe`
+```bash
+# Windows
+copy .env.example .env
+
+# Linux / macOS
+cp .env.example .env
+```
+
+Open `.env` and fill in your values (see [Configuration](#-configuration-env) below).
 
 ### 5. Start MongoDB
 
 ```bash
-# Windows Service (if installed as a service)
+# Windows service
 net start MongoDB
 
-# Or manually
+# Manual
 mongod --dbpath "C:\data\db"
 ```
 
-### 6. Obtain the Trained Model
+### 6. Get the Trained Model
 
-The pre-trained license plate detection model (`best.pt`) lives at:
-```
-runs/detect/license_plate_detection/weights/best.pt
-```
-If it is not included in the clone (large file), either:
-- Download it from the [Releases page](https://github.com/YOUR_USERNAME/vehicle-license-plate-detection/releases), **or**
-- Train it yourself (see [Model Training](#-model-training)).
+The model `runs/detect/license_plate_detection/weights/best.pt` (~5.4 MB) is excluded from git due to size.
+
+**Option A** — Download from [Releases](https://github.com/YOUR_USERNAME/GateVision/releases) page  
+**Option B** — Train yourself: `python train_model.py` (see [Model Training](#-model-training))
 
 ---
 
-## ⚙️ Configuration
+## ⚙️ Configuration (`.env`)
 
-Open `noplate_with_database.py` (or `test.py`) and update the top-level constants:
+Copy `.env.example` → `.env` and fill in your values:
 
-```python
-# ── Camera ──────────────────────────────────────────────
-RTSP_STREAM   = "rtsp://USERNAME:PASSWORD@CAMERA_IP:554/"
+```dotenv
+# Your RTSP camera stream
+RTSP_STREAM=rtsp://USERNAME:PASSWORD@CAMERA_IP:554/
 
-# ── Paths ───────────────────────────────────────────────
-DASHBOARD_DIR = r"D:\vehicle_speed\no_plate"   # project root
-MODEL_PATH    = "runs/detect/license_plate_detection/weights/best.pt"
-YOLO_CAR_MODEL = "yolov8n.pt"
+# Project root (default = current directory, usually fine as-is)
+# DASHBOARD_DIR=C:\path\to\GateVision
 
-# ── MongoDB ─────────────────────────────────────────────
-MONGO_URI             = "mongodb://localhost:27017"
-MONGO_DB_NAME         = "enhanced_vehicle_db"
-MONGO_COLLECTION_NAME = "vehicle_records"
+# Tesseract OCR executable
+# TESSERACT_CMD=C:\Program Files\Tesseract-OCR\tesseract.exe   # Windows
+# TESSERACT_CMD=/usr/bin/tesseract                              # Linux
 
-# ── Tesseract (Windows path) ─────────────────────────────
-# (in the script)
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+# MongoDB connection
+MONGO_URI=mongodb://localhost:27017
+MONGO_DB_NAME=enhanced_vehicle_db
+MONGO_COLLECTION_NAME=vehicle_records
+
+# Web dashboard port
+FLASK_HOST=0.0.0.0
+FLASK_PORT=5000
 ```
+
+> **Never commit `.env`** — it's already in `.gitignore`. Only `.env.example` (with no real values) is tracked.
 
 ---
 
-## ▶️ Running the System
+## ▶️ Running GateVision
 
 ### Full System (Recommended)
 
@@ -260,73 +279,57 @@ pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tessera
 python noplate_with_database.py
 ```
 
-This starts:
-- RTSP stream reader
-- Vehicle + plate detection pipeline
-- Entry/exit orientation analysis
-- MongoDB writer
-- Flask dashboard on `http://localhost:5000`
+Starts: RTSP reader → detection pipeline → entry/exit analysis → MongoDB writer → Flask dashboard
 
-### Alternative Variants
+### Open Dashboard
+
+```
+http://localhost:5000           # local machine
+http://<SERVER_IP>:5000         # any device on the same network
+```
+
+### Alternative Modes
 
 ```bash
-# Enhanced version with duplicate cleanup
-python test.py
-
-# Ultra-fast experimental version
-python exp.py
-
-# Screenshot-only mode (no DB)
-python live_noplate_screenshot.py
-
-# Raw stream viewer
-python live_stream.py
-
-# Offline video file inference
-python detect_no_plate.py
+python test.py                  # Enhanced: duplicate cleanup + no frame skip
+python exp.py                   # Ultra-fast: optimised for high-FPS streams
+python live_noplate_screenshot.py  # Screenshots only (no DB)
+python live_stream.py           # Raw RTSP viewer
+python detect_no_plate.py input.mp4 output.mp4   # Offline video
 ```
 
 ---
 
 ## 🌐 Web Dashboard
 
-Once running, open your browser and go to:
-
-```
-http://localhost:5000        # local
-http://<SERVER_IP>:5000      # from another device on the same network
-```
-
-### Dashboard Features
-
-- 📺 **Live video feed** with bounding boxes
-- 📊 **Real-time statistics** — total detections, unique plates, entries, exits
-- 📋 **Vehicle records table** — plate number, timestamp, entry/exit status, confidence
-- 🖼 **Image gallery** — full-car and plate close-up thumbnails
-- 🔍 **Plate search** — search historical records
-- 🧹 **Session reset** — clear session data without touching the DB
+| Panel | What you see |
+|---|---|
+| 📺 Live Feed | Annotated video with bounding boxes |
+| 📊 Stats | Total detections, unique plates, entries, exits |
+| 📋 Records Table | Plate number, timestamp, entry/exit status, confidence, vehicle type |
+| 🖼 Image Gallery | Full-car image + plate close-up per detection |
+| 🔍 Search | Instant plate number lookup across all records |
 
 ### REST API Endpoints
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/` | Dashboard HTML |
-| GET | `/video_feed` | MJPEG live stream |
-| GET | `/api/stats` | JSON detection statistics |
-| GET | `/api/plates` | List of all detected plate numbers |
-| GET | `/api/reset_captures` | Reset in-memory plate list |
-| GET | `/api/reset_session` | Reset session counters & tracks |
-| GET | `/api/cleanup_duplicates` | Trigger duplicate cleanup |
-| GET | `/api/system_info` | System health & stream stats |
-| GET | `/screenshots/<file>` | Serve saved screenshot images |
-| GET | `/car_images/<file>` | Serve full-car images |
-| GET | `/plate_images/<file>` | Serve plate close-up images |
+| Endpoint | Description |
+|---|---|
+| `GET /` | Dashboard HTML |
+| `GET /video_feed` | MJPEG live stream |
+| `GET /api/stats` | Detection statistics (JSON) |
+| `GET /api/plates` | All detected plate numbers |
+| `GET /api/reset_session` | Clear session counters |
+| `GET /api/cleanup_duplicates` | Trigger duplicate cleanup |
+| `GET /api/system_info` | Stream health + system info |
+| `GET /screenshots/<file>` | Serve saved screenshots |
+| `GET /car_images/<file>` | Serve full-car images |
+| `GET /plate_images/<file>` | Serve plate close-ups |
 
 ---
 
 ## 🗄 Database Schema
 
-Each detected vehicle creates one document in MongoDB:
+Each detected vehicle creates one document in MongoDB (`enhanced_vehicle_db.vehicle_records`):
 
 ```json
 {
@@ -337,12 +340,11 @@ Each detected vehicle creates one document in MongoDB:
   "orientation": "front",
   "entry_exit": "entry",
   "vehicle_type": "car",
-  "car_image_path": "car_images/car_MH12AB1234_20261107_173000_123.jpg",
-  "plate_image_path": "plate_images/plate_MH12AB1234_20261107_173000_123.jpg",
+  "car_image_path": "car_images/car_MH12AB1234_20261107_173000.jpg",
+  "plate_image_path": "plate_images/plate_MH12AB1234_20261107_173000.jpg",
   "detection_id": "MH12AB1234_20261107_173000_123",
   "enhancement_applied": true,
   "detection_method": "YOLO + OCR Ensemble",
-  "image_quality": "Ultra HD Enhanced",
   "created_at": "2026-11-07T17:30:00"
 }
 ```
@@ -353,112 +355,96 @@ Each detected vehicle creates one document in MongoDB:
 
 ## 🏋️ Model Training
 
-To train or re-train the license plate detection model on your own dataset:
+### 1. Place Dataset
 
-### 1. Prepare Dataset
-
-Place your YOLOv8-formatted dataset into:
 ```
 License Plate Recognition.v4-resized640_aug3x-accurate.yolov8/
-├── train/images/
-├── train/labels/
-├── valid/images/
-├── valid/labels/
-├── test/images/
-└── test/labels/
+├── train/images/ & labels/
+├── valid/images/ & labels/
+└── test/images/  & labels/
 ```
 
-> The included dataset has been downloaded from [Roboflow Universe](https://universe.roboflow.com/) — **License Plate Recognition v4** (640 px, 3× augmented).
+> Dataset source: [Roboflow Universe — License Plate Recognition v4](https://universe.roboflow.com/) (640 px, 3× augmented)
 
-### 2. Update `data.yaml`
-
-```yaml
-train: path/to/train/images
-val:   path/to/valid/images
-test:  path/to/test/images
-nc: 1
-names: ['License_Plate']
-```
-
-### 3. Run Training
+### 2. Train
 
 ```bash
 python train_model.py
 ```
 
-Default config: **20 epochs, batch=8, imgsz=640, AMP disabled**.  
-Best weights saved to `runs/detect/license_plate_detection/weights/best.pt`.
+Default: **20 epochs · batch=8 · imgsz=640 · AMP off**  
+Best weights → `runs/detect/license_plate_detection/weights/best.pt`
 
 ---
 
 ## 📜 Scripts Reference
 
-| Script | Purpose |
+| Script | Role |
 |---|---|
-| `noplate_with_database.py` | **Main production script** — full pipeline with Entry/Exit + colour preservation |
-| `test.py` | Enhanced version — adds improved duplicate cleanup and no-frame-skip mode |
-| `exp.py` | Ultra-fast experimental version — optimised for speed with vehicle tracker |
-| `live_noplate_screenshot.py` | HD screenshots only — no DB, no entry/exit |
-| `live_stream.py` | Raw RTSP stream display — connection test utility |
-| `detect_no_plate.py` | Offline inference on a saved video file |
+| `noplate_with_database.py` | **Main production script** — full GateVision pipeline with colour preservation |
+| `test.py` | Enhanced version with improved duplicate dedup and no-frame-skip streaming |
+| `exp.py` | Ultra-fast version — higher FPS, vehicle tracker, optimised for speed |
+| `live_noplate_screenshot.py` | HD screenshot capture only — no DB, no entry/exit |
+| `live_stream.py` | Raw RTSP viewer — use for camera connection testing |
+| `detect_no_plate.py` | Offline inference — run on a saved video file |
 | `train_model.py` | Fine-tune YOLOv8 on your license plate dataset |
-| `mongodb_setup.py` | Seed sample data, test MongoDB connection, view collection info |
+| `mongodb_setup.py` | Seed sample data, test connection, view collection info |
+| `config.py` | Central config loader — reads `.env` → env vars → defaults |
 
 ---
 
 ## 🛠 Troubleshooting
 
-### RTSP stream not connecting
-- Test the URL in VLC first: `Media → Open Network Stream → paste URL`
-- Ensure the camera is on the same network/subnet
-- Try different OpenCV backends: `cv2.CAP_FFMPEG`, `cv2.CAP_GSTREAMER`
-
-### Tesseract not found
+**RTSP stream not connecting**
 ```
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+1. Test URL in VLC: Media → Open Network Stream
+2. Verify camera is on the same network
+3. Check RTSP_STREAM value in your .env file
 ```
-Adjust this path to your actual Tesseract install location.
 
-### MongoDB connection refused
+**Tesseract not found**
+```
+# Update TESSERACT_CMD in .env to your actual path
+# Linux: sudo apt install tesseract-ocr
+# macOS: brew install tesseract
+```
+
+**MongoDB connection refused**
 ```bash
-# Check if MongoDB is running
-Get-Service MongoDB     # Windows PowerShell
-systemctl status mongod # Linux
-
-# Start it
-net start MongoDB       # Windows
-sudo systemctl start mongod # Linux
+net start MongoDB        # Windows
+sudo systemctl start mongod  # Linux
 ```
 
-### `best.pt` model not found
-Run `python train_model.py` to train the model, or download it from the [Releases](https://github.com/YOUR_USERNAME/vehicle-license-plate-detection/releases) page.
+**`best.pt` model not found**
+```
+python train_model.py    # train it yourself
+# or download from the Releases page
+```
 
-### CUDA / GPU errors
-Verify your CUDA version matches your PyTorch build:
+**GPU / CUDA errors**
 ```bash
 python -c "import torch; print(torch.cuda.is_available(), torch.version.cuda)"
+# Reinstall PyTorch matching your CUDA version from pytorch.org
 ```
 
 ---
 
 ## 📄 License
 
-This project is released under the **MIT License**.  
-See [`LICENSE`](LICENSE) for details.
+MIT — see [LICENSE](LICENSE)
 
 ---
 
 ## 🙏 Acknowledgements
 
-- [Ultralytics YOLOv8](https://github.com/ultralytics/ultralytics) — object detection backbone
+- [Ultralytics YOLOv8](https://github.com/ultralytics/ultralytics) — detection backbone
 - [Roboflow Universe](https://universe.roboflow.com/) — license plate dataset
 - [Tesseract OCR](https://github.com/tesseract-ocr/tesseract) — OCR engine
 - [MongoDB](https://www.mongodb.com/) — document database
-- [Flask](https://flask.palletsprojects.com/) — web dashboard framework
+- [Flask](https://flask.palletsprojects.com/) — web dashboard
 
 ---
 
 <div align="center">
-Made with ❤️ | Real-time vehicle intelligence
+<b>GateVision</b> — Know every vehicle, every moment. 🚗🕐
 </div>
-

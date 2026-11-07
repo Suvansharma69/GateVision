@@ -23,7 +23,9 @@ build/
 .ipynb_checkpoints/
 *.ipynb
 
-# ----- Large model weights (use Git LFS or share separately) -----
+# ----- Large Training Dataset (download separately via Roboflow) -----
+License Plate Recognition*/
+*.zip
 yolov8n.pt
 yolo11n.pt
 *.pt

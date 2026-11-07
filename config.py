@@ -61,3 +61,4 @@ MONGO_COLLECTION_NAME = os.environ.get("MONGO_COLLECTION_NAME", "vehicle_records
 # ---------------------------------------------------------------------------
 FLASK_HOST = os.environ.get("FLASK_HOST", "0.0.0.0")
 FLASK_PORT = int(os.environ.get("FLASK_PORT", 5000))
+

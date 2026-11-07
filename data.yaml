@@ -1,6 +1,7 @@
 names:
 - License_Plate
 nc: 1
-test: D:/vehicle_speed/no_plate/License Plate Recognition.v4-resized640_aug3x-accurate.yolov8/test/images
-train: D:/vehicle_speed/no_plate/License Plate Recognition.v4-resized640_aug3x-accurate.yolov8/train/images
-val: D:/vehicle_speed/no_plate/License Plate Recognition.v4-resized640_aug3x-accurate.yolov8/valid/images
+# Paths are relative to the project root — update DASHBOARD_DIR in .env if you move the project
+test: License Plate Recognition.v4-resized640_aug3x-accurate.yolov8/test/images
+train: License Plate Recognition.v4-resized640_aug3x-accurate.yolov8/train/images
+val: License Plate Recognition.v4-resized640_aug3x-accurate.yolov8/valid/images
