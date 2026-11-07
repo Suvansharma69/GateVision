@@ -1,0 +1,1622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Vehicle Detection System - Entry/Exit Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .dashboard-container {
+            display: grid;
+            grid-template-areas: 
+                "header header header"
+                "video stats control"
+                "records records records"
+                "analytics analytics analytics";
+            grid-template-columns: 2fr 1fr 1fr;
+            grid-template-rows: auto auto 1fr auto;
+            gap: 20px;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            grid-area: header;
+            background: linear-gradient(135deg, #1e293b, #334155);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #00d4ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .header .subtitle {
+            text-align: center;
+            font-size: 1.2rem;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .status-indicators {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.connected { background: #00ff88; }
+        .status-dot.processing { background: #00d4ff; }
+        .status-dot.recording { background: #ff6b6b; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Video Feed */
+        .video-section {
+            grid-area: video;
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16/9;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+            cursor: pointer;
+        }
+
+        #videoFeed {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #1a1a2e;
+            transition: transform 0.3s ease;
+        }
+
+        .video-container:hover #videoFeed {
+            transform: scale(1.02);
+        }
+
+        .video-overlay {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            right: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .fullscreen-btn {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            z-index: 20;
+            pointer-events: all;
+            transition: all 0.3s ease;
+        }
+
+        .fullscreen-btn:hover {
+            background: rgba(0, 0, 0, 0.9);
+            transform: scale(1.1);
+        }
+
+        .live-badge {
+            background: linear-gradient(135deg, #ff4757, #ff6b6b);
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            box-shadow: 0 5px 15px rgba(255, 71, 87, 0.4);
+            animation: livePulse 2s infinite;
+        }
+
+        @keyframes livePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .fps-counter {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            color: #00ff88;
+        }
+
+        /* Fullscreen Modal */
+        .fullscreen-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 2000;
+            cursor: pointer;
+        }
+
+        .fullscreen-modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fullscreen-video {
+            max-width: 95%;
+            max-height: 95%;
+            object-fit: contain;
+        }
+
+        .fullscreen-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.5rem;
+            z-index: 2001;
+        }
+
+        /* Stats Section */
+        .stats-section {
+            grid-area: stats;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(51, 65, 85, 0.8));
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-card:hover::before {
+            opacity: 1;
+        }
+
+        .stat-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .stat-icon {
+            font-size: 1.5rem;
+        }
+
+        .stat-title {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #e2e8f0;
+            margin-bottom: 5px;
+        }
+
+        .stat-change {
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .stat-change.positive { color: #00ff88; }
+        .stat-change.negative { color: #ff6b6b; }
+        .stat-change.neutral { color: #94a3b8; }
+
+        /* Entry/Exit Cards */
+        .entry-exit-card {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.05));
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .exit-card {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        /* Control Section */
+        .control-section {
+            grid-area: control;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .control-card {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(51, 65, 85, 0.8));
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .search-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px 20px 15px 50px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 25px;
+            color: #e2e8f0;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #00d4ff;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+        }
+
+        .control-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00d4ff, #0ea5e9);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e2e8f0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(239, 68, 68, 0.3);
+        }
+
+        /* Records Section - FIXED SCROLLING */
+        .records-section {
+            grid-area: records;
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(51, 65, 85, 0.8));
+            border-radius: 20px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            /* Make this section scrollable */
+            max-height: 600px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .records-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-shrink: 0; /* Don't shrink the header */
+        }
+
+        .records-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #e2e8f0;
+        }
+
+        .table-container {
+            /* This is the key fix - make the table container scrollable */
+            overflow: auto;
+            border-radius: 12px;
+            background: rgba(15, 23, 42, 0.6);
+            flex: 1; /* Take remaining space */
+            min-height: 0; /* Allow flex item to shrink below content size */
+        }
+
+        .records-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px; /* Ensure table has minimum width for horizontal scroll */
+        }
+
+        .records-table th {
+            background: rgba(30, 41, 59, 0.9);
+            padding: 16px;
+            text-align: left;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.85rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .records-table td {
+            padding: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            vertical-align: middle;
+            white-space: nowrap; /* Prevent text wrapping */
+        }
+
+        .records-table tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .plate-number {
+            font-family: 'Courier New', monospace;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #00d4ff;
+        }
+
+        .entry-exit-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .badge-entered {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .badge-exited {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .badge-detected {
+            background: rgba(156, 163, 175, 0.2);
+            color: #9ca3af;
+            border: 1px solid rgba(156, 163, 175, 0.3);
+        }
+
+        .vehicle-type {
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            background: rgba(99, 102, 241, 0.2);
+            color: #6366f1;
+            text-transform: capitalize;
+            white-space: nowrap;
+        }
+
+        .confidence-bar {
+            width: 60px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ef4444, #f59e0b, #22c55e);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .image-preview {
+            width: 60px;
+            height: 40px;
+            border-radius: 8px;
+            object-fit: cover;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .image-preview:hover {
+            transform: scale(1.1);
+        }
+
+        /* Analytics Section */
+        .analytics-section {
+            grid-area: analytics;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .chart-card {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(51, 65, 85, 0.8));
+            border-radius: 20px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .chart-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #e2e8f0;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .chart-container {
+            height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: 12px;
+            position: relative;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #1e293b, #334155);
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 90%;
+            max-height: 80%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        .close {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            font-size: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+            color: #94a3b8;
+            transition: color 0.3s ease;
+        }
+
+        .close:hover {
+            color: #e2e8f0;
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #00d4ff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .dashboard-container {
+                grid-template-areas: 
+                    "header header"
+                    "video video"
+                    "stats control"
+                    "records records"
+                    "analytics analytics";
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-container {
+                grid-template-areas: 
+                    "header"
+                    "video"
+                    "stats"
+                    "control"
+                    "records"
+                    "analytics";
+                grid-template-columns: 1fr;
+                padding: 15px;
+                gap: 15px;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .status-indicators {
+                flex-wrap: wrap;
+                gap: 15px;
+            }
+
+            .records-table {
+                font-size: 0.9rem;
+            }
+
+            .records-table th,
+            .records-table td {
+                padding: 12px 8px;
+            }
+
+            /* Better mobile scrolling */
+            .records-section {
+                max-height: 400px;
+            }
+        }
+
+        /* Enhanced Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #00d4ff, #00ff88);
+            border-radius: 6px;
+            border: 2px solid rgba(30, 41, 59, 0.8);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #0ea5e9, #16a34a);
+        }
+
+        ::-webkit-scrollbar-corner {
+            background: rgba(30, 41, 59, 0.8);
+        }
+
+        /* Firefox scrollbar */
+        .table-container {
+            scrollbar-width: thin;
+            scrollbar-color: #00d4ff rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🚗 Enhanced Vehicle Detection System</h1>
+            <div class="subtitle">Full Car + License Plate + Entry/Exit Detection</div>
+            <div class="status-indicators">
+                <div class="status-indicator">
+                    <div class="status-dot connected" id="rtspStatus"></div>
+                    <span>RTSP Stream</span>
+                </div>
+                <div class="status-indicator">
+                    <div class="status-dot processing" id="processingStatus"></div>
+                    <span>AI Processing</span>
+                </div>
+                <div class="status-indicator">
+                    <div class="status-dot recording" id="mongoStatus"></div>
+                    <span>Database</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Video Feed -->
+        <div class="video-section">
+            <div class="video-container" onclick="toggleFullscreen()">
+                <img id="videoFeed" src="/video_feed" alt="Live Video Feed">
+                <div class="video-overlay">
+                    <div class="live-badge">🔴 LIVE</div>
+                    <div class="fps-counter" id="fpsCounter">30 FPS</div>
+                </div>
+                <button class="fullscreen-btn" onclick="toggleFullscreen()" title="Press F or click to fullscreen">⛶</button>
+            </div>
+        </div>
+
+        <!-- Fullscreen Modal -->
+        <div id="fullscreenModal" class="fullscreen-modal">
+            <button class="fullscreen-close" onclick="exitFullscreen()">✕</button>
+            <img id="fullscreenVideo" class="fullscreen-video" src="/video_feed" alt="Fullscreen Video">
+        </div>
+
+        <!-- Stats Section -->
+        <div class="stats-section">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon">🚗</div>
+                    <div class="stat-title">Total Vehicles</div>
+                </div>
+                <div class="stat-value" id="totalVehicles">0</div>
+                <div class="stat-change neutral">
+                    <span>Since session start</span>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon">🏷️</div>
+                    <div class="stat-title">Full Cars Captured</div>
+                </div>
+                <div class="stat-value" id="fullCars">0</div>
+                <div class="stat-change positive">
+                    <span>Complete vehicle images</span>
+                </div>
+            </div>
+
+            <div class="stat-card entry-exit-card">
+                <div class="stat-header">
+                    <div class="stat-icon">🟢</div>
+                    <div class="stat-title">Entries</div>
+                </div>
+                <div class="stat-value" id="totalEntries">0</div>
+                <div class="stat-change positive">
+                    <span>Vehicles entered</span>
+                </div>
+            </div>
+
+            <div class="stat-card exit-card">
+                <div class="stat-header">
+                    <div class="stat-icon">🔴</div>
+                    <div class="stat-title">Exits</div>
+                </div>
+                <div class="stat-value" id="totalExits">0</div>
+                <div class="stat-change negative">
+                    <span>Vehicles exited</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Control Section -->
+        <div class="control-section">
+            <div class="control-card">
+                <h3 style="margin-bottom: 15px; color: #e2e8f0;">🔍 Search & Controls</h3>
+                
+                <div class="search-container">
+                    <input type="text" class="search-input" id="searchInput" placeholder="Search plates, vehicle types, entry/exit...">
+                    <div class="search-icon">🔍</div>
+                </div>
+
+                <div class="control-buttons">
+                    <button class="btn btn-primary" onclick="searchVehicles()">
+                        <span class="loading" id="searchLoading" style="display: none;"></span>
+                        Search Records
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportData()">📊 Export Data</button>
+                    <button class="btn btn-secondary" onclick="viewStats()">📈 View Analytics</button>
+                    <button class="btn btn-danger" onclick="resetSession()">🔄 Reset Session</button>
+                </div>
+            </div>
+
+            <div class="control-card">
+                <h3 style="margin-bottom: 15px; color: #e2e8f0;">⚙️ System Status</h3>
+                <div style="display: flex; flex-direction: column; gap: 10px; font-size: 0.9rem;">
+                    <div>MongoDB: <span id="mongoStatusText" style="color: #00ff88;">Connected</span></div>
+                    <div>Frame Rate: <span id="frameRate" style="color: #00d4ff;">30.0 FPS</span></div>
+                    <div>Processing: <span id="processingMode" style="color: #00ff88;">Full Car + Entry/Exit</span></div>
+                    <div>Uptime: <span id="uptime" style="color: #94a3b8;">00:00:00</span></div>
+                    <div style="margin-top: 10px; font-size: 0.8rem; color: #64748b;">
+                        💡 Press <kbd style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">F</kbd> for fullscreen video
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Records Section -->
+        <div class="records-section">
+            <div class="records-header">
+                <h2 class="records-title">📋 Recent Vehicle Records</h2>
+                <button class="btn btn-secondary" onclick="refreshRecords()" style="padding: 8px 16px; font-size: 0.8rem;">
+                    🔄 Refresh
+                </button>
+            </div>
+            
+            <div class="table-container">
+                <table class="records-table">
+                    <thead>
+                        <tr>
+                            <th>License Plate</th>
+                            <th>Vehicle Type</th>
+                            <th>Entry/Exit</th>
+                            <th>Timestamp</th>
+                            <th>Confidence</th>
+                            <th>Full Car</th>
+                            <th>Plate Image</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recordsTableBody">
+                        <!-- Records will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Analytics Section -->
+        <div class="analytics-section">
+            <div class="chart-card">
+                <h3 class="chart-title">📊 Entry/Exit Distribution</h3>
+                <div class="chart-container" id="entryExitChart">
+                    <canvas id="entryExitCanvas" width="300" height="200"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h3 class="chart-title">🚗 Vehicle Types</h3>
+                <div class="chart-container" id="vehicleTypesChart">
+                    <canvas id="vehicleTypesCanvas" width="300" height="200"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h3 class="chart-title">📈 Hourly Activity</h3>
+                <div class="chart-container" id="hourlyChart">
+                    <canvas id="hourlyCanvas" width="300" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div id="imageModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <img id="modalImage" style="max-width: 100%; max-height: 100%; border-radius: 12px;">
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let startTime = Date.now();
+        let statsUpdateInterval;
+        let recordsUpdateInterval;
+        let isFullscreen = false;
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDashboard();
+            setupEventListeners();
+            updateUptime();
+            setInterval(updateUptime, 1000);
+        });
+
+        function initializeDashboard() {
+            console.log('🚗 Enhanced Vehicle Detection Dashboard Initialized');
+            
+            // Start periodic updates
+            updateStats();
+            updateRecords();
+            updateCharts();
+            
+            statsUpdateInterval = setInterval(updateStats, 3000);
+            recordsUpdateInterval = setInterval(updateRecords, 5000);
+        }
+
+        function setupEventListeners() {
+            // Search input
+            document.getElementById('searchInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    searchVehicles();
+                }
+            });
+
+            // Modal functionality
+            const modal = document.getElementById('imageModal');
+            const modalImg = document.getElementById('modalImage');
+            const span = document.getElementsByClassName('close')[0];
+
+            span.onclick = function() {
+                modal.style.display = 'none';
+            }
+
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    modal.style.display = 'none';
+                }
+                // Close fullscreen if clicking on the modal background
+                if (event.target.id === 'fullscreenModal') {
+                    exitFullscreen();
+                }
+            }
+
+            // Image preview clicks
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('image-preview')) {
+                    modal.style.display = 'block';
+                    modalImg.src = e.target.src;
+                }
+            });
+        }
+
+        // Fullscreen functionality
+        function toggleFullscreen() {
+            if (!isFullscreen) {
+                enterFullscreen();
+            } else {
+                exitFullscreen();
+            }
+        }
+
+        function enterFullscreen() {
+            const modal = document.getElementById('fullscreenModal');
+            const fullscreenVideo = document.getElementById('fullscreenVideo');
+            
+            modal.classList.add('active');
+            fullscreenVideo.src = document.getElementById('videoFeed').src;
+            isFullscreen = true;
+            
+            // Disable body scroll
+            document.body.style.overflow = 'hidden';
+        }
+
+        function exitFullscreen() {
+            const modal = document.getElementById('fullscreenModal');
+            
+            modal.classList.remove('active');
+            isFullscreen = false;
+            
+            // Re-enable body scroll
+            document.body.style.overflow = 'auto';
+        }
+
+        async function updateStats() {
+            try {
+                const response = await fetch('/api/enhanced_stats');
+                const stats = await response.json();
+                
+                // Update stat values with animation
+                updateStatValue('totalVehicles', stats.unique_plates || 0);
+                updateStatValue('fullCars', stats.full_cars_captured || 0);
+                updateStatValue('totalEntries', stats.entries || 0);
+                updateStatValue('totalExits', stats.exits || 0);
+                
+                // Update status indicators
+                updateStatusIndicator('mongoStatus', stats.mongodb_status === 'Connected');
+                updateStatusIndicator('processingStatus', true);
+                updateStatusIndicator('rtspStatus', true);
+                
+                // Update system status
+                document.getElementById('mongoStatusText').textContent = stats.mongodb_status || 'Unknown';
+                document.getElementById('mongoStatusText').style.color = 
+                    stats.mongodb_status === 'Connected' ? '#00ff88' : '#ff6b6b';
+                
+                document.getElementById('processingMode').textContent = 
+                    stats.processing_mode || 'Full Car + Entry/Exit';
+                
+            } catch (error) {
+                console.error('Error updating stats:', error);
+                // Update status indicators to show error
+                updateStatusIndicator('mongoStatus', false);
+            }
+        }
+
+        async function updateRecords() {
+            try {
+                const response = await fetch('/api/vehicle_records?limit=20');
+                const data = await response.json();
+                
+                const tbody = document.getElementById('recordsTableBody');
+                tbody.innerHTML = '';
+                
+                if (data.records && data.records.length > 0) {
+                    data.records.forEach(record => {
+                        const row = createRecordRow(record);
+                        tbody.appendChild(row);
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #94a3b8; padding: 30px;">No records found</td></tr>';
+                }
+                
+            } catch (error) {
+                console.error('Error updating records:', error);
+                document.getElementById('recordsTableBody').innerHTML = 
+                    '<tr><td colspan="7" style="text-align: center; color: #ff6b6b; padding: 30px;">Error loading records</td></tr>';
+            }
+        }
+
+        function createRecordRow(record) {
+            const row = document.createElement('tr');
+            row.style.animation = 'fadeIn 0.5s ease-in';
+            
+            // Format timestamp
+            const timestamp = new Date(record.timestamp).toLocaleString();
+            
+            // Determine entry/exit status
+            let entryExitBadge = '';
+            if (record.entry_exit_status === 'Vehicle Entered') {
+                entryExitBadge = '<span class="entry-exit-badge badge-entered">🟢 Entered</span>';
+            } else if (record.entry_exit_status === 'Vehicle Exited') {
+                entryExitBadge = '<span class="entry-exit-badge badge-exited">🔴 Exited</span>';
+            } else {
+                entryExitBadge = '<span class="entry-exit-badge badge-detected">⚪ Detected</span>';
+            }
+            
+            // Vehicle type
+            const vehicleType = record.vehicle_info?.type || 'unknown';
+            
+            // Confidence bar
+            const confidence = record.confidence || 0;
+            const confidenceBar = `
+                <div class="confidence-bar">
+                    <div class="confidence-fill" style="width: ${confidence}%"></div>
+                </div>
+                <div style="margin-top: 4px; font-size: 0.8rem; color: #94a3b8;">${confidence.toFixed(1)}%</div>
+            `;
+            
+            // Images
+            const fullCarImage = record.car_image_path ? 
+                `<img src="/api/image/${encodeURIComponent(record.car_image_path)}" class="image-preview" alt="Full Car" title="Click to enlarge">` : 
+                '<span style="color: #64748b;">No image</span>';
+                
+            const plateImage = record.plate_image_path ? 
+                `<img src="/api/image/${encodeURIComponent(record.plate_image_path)}" class="image-preview" alt="Plate" title="Click to enlarge">` : 
+                '<span style="color: #64748b;">No image</span>';
+            
+            row.innerHTML = `
+                <td><span class="plate-number">${record.plate_number || 'Unknown'}</span></td>
+                <td><span class="vehicle-type">${vehicleType}</span></td>
+                <td>${entryExitBadge}</td>
+                <td style="color: #94a3b8; font-size: 0.9rem;">${timestamp}</td>
+                <td>${confidenceBar}</td>
+                <td>${fullCarImage}</td>
+                <td>${plateImage}</td>
+            `;
+            
+            return row;
+        }
+
+        async function updateCharts() {
+            try {
+                // Update Entry/Exit Chart
+                await updateEntryExitChart();
+                
+                // Update Vehicle Types Chart
+                await updateVehicleTypesChart();
+                
+                // Update Hourly Activity Chart
+                await updateHourlyChart();
+                
+            } catch (error) {
+                console.error('Error updating charts:', error);
+            }
+        }
+
+        async function updateEntryExitChart() {
+            try {
+                const response = await fetch('/api/entry_exit_stats');
+                const data = await response.json();
+                
+                const canvas = document.getElementById('entryExitCanvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                if (data.entry_exit_summary && data.entry_exit_summary.length > 0) {
+                    drawPieChart(ctx, data.entry_exit_summary, canvas.width, canvas.height);
+                } else {
+                    drawNoDataMessage(ctx, canvas.width, canvas.height, 'No entry/exit data');
+                }
+                
+            } catch (error) {
+                console.error('Error updating entry/exit chart:', error);
+                const canvas = document.getElementById('entryExitCanvas');
+                const ctx = canvas.getContext('2d');
+                drawNoDataMessage(ctx, canvas.width, canvas.height, 'Error loading data');
+            }
+        }
+
+        async function updateVehicleTypesChart() {
+            try {
+                const response = await fetch('/api/vehicle_types');
+                const data = await response.json();
+                
+                const canvas = document.getElementById('vehicleTypesCanvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                if (data.vehicle_types && data.vehicle_types.length > 0) {
+                    drawBarChart(ctx, data.vehicle_types, canvas.width, canvas.height);
+                } else {
+                    drawNoDataMessage(ctx, canvas.width, canvas.height, 'No vehicle type data');
+                }
+                
+            } catch (error) {
+                console.error('Error updating vehicle types chart:', error);
+                const canvas = document.getElementById('vehicleTypesCanvas');
+                const ctx = canvas.getContext('2d');
+                drawNoDataMessage(ctx, canvas.width, canvas.height, 'Error loading data');
+            }
+        }
+
+        async function updateHourlyChart() {
+            try {
+                const response = await fetch('/api/entry_exit_stats');
+                const data = await response.json();
+                
+                const canvas = document.getElementById('hourlyCanvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                if (data.hourly_distribution) {
+                    drawHourlyChart(ctx, data.hourly_distribution, canvas.width, canvas.height);
+                } else {
+                    drawNoDataMessage(ctx, canvas.width, canvas.height, 'No hourly data');
+                }
+                
+            } catch (error) {
+                console.error('Error updating hourly chart:', error);
+                const canvas = document.getElementById('hourlyCanvas');
+                const ctx = canvas.getContext('2d');
+                drawNoDataMessage(ctx, canvas.width, canvas.height, 'Error loading data');
+            }
+        }
+
+        function drawPieChart(ctx, data, width, height) {
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = Math.min(width, height) / 3;
+            
+            const colors = {
+                'Vehicle Entered': '#22c55e',
+                'Vehicle Exited': '#ef4444',
+                'Vehicle Detected': '#9ca3af'
+            };
+            
+            let total = data.reduce((sum, item) => sum + item.count, 0);
+            let currentAngle = -Math.PI / 2;
+            
+            // Draw pie slices
+            data.forEach(item => {
+                const sliceAngle = (item.count / total) * 2 * Math.PI;
+                
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
+                ctx.closePath();
+                ctx.fillStyle = colors[item._id] || '#64748b';
+                ctx.fill();
+                
+                // Draw label
+                const labelAngle = currentAngle + sliceAngle / 2;
+                const labelX = centerX + Math.cos(labelAngle) * (radius * 0.7);
+                const labelY = centerY + Math.sin(labelAngle) * (radius * 0.7);
+                
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '12px Inter';
+                ctx.textAlign = 'center';
+                ctx.fillText(item.count, labelX, labelY);
+                
+                currentAngle += sliceAngle;
+            });
+            
+            // Draw legend
+            let legendY = height - 60;
+            data.forEach(item => {
+                ctx.fillStyle = colors[item._id] || '#64748b';
+                ctx.fillRect(20, legendY, 12, 12);
+                
+                ctx.fillStyle = '#e2e8f0';
+                ctx.font = '11px Inter';
+                ctx.textAlign = 'left';
+                ctx.fillText(`${item._id}: ${item.count}`, 40, legendY + 9);
+                
+                legendY += 20;
+            });
+        }
+
+        function drawBarChart(ctx, data, width, height) {
+            const margin = 40;
+            const chartWidth = width - 2 * margin;
+            const chartHeight = height - 2 * margin;
+            
+            const maxValue = Math.max(...data.map(item => item.count));
+            const barWidth = chartWidth / data.length * 0.8;
+            const barSpacing = chartWidth / data.length * 0.2;
+            
+            const colors = ['#00d4ff', '#00ff88', '#ff6b6b', '#ffd93d', '#6366f1'];
+            
+            data.forEach((item, index) => {
+                const barHeight = (item.count / maxValue) * chartHeight;
+                const x = margin + index * (barWidth + barSpacing);
+                const y = height - margin - barHeight;
+                
+                // Draw bar
+                ctx.fillStyle = colors[index % colors.length];
+                ctx.fillRect(x, y, barWidth, barHeight);
+                
+                // Draw value on top of bar
+                ctx.fillStyle = '#e2e8f0';
+                ctx.font = '11px Inter';
+                ctx.textAlign = 'center';
+                ctx.fillText(item.count, x + barWidth/2, y - 5);
+                
+                // Draw label
+                ctx.save();
+                ctx.translate(x + barWidth/2, height - 10);
+                ctx.rotate(-Math.PI/4);
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '10px Inter';
+                ctx.textAlign = 'right';
+                ctx.fillText(item.type, 0, 0);
+                ctx.restore();
+            });
+        }
+
+        function drawHourlyChart(ctx, data, width, height) {
+            const margin = 40;
+            const chartWidth = width - 2 * margin;
+            const chartHeight = height - 2 * margin;
+            
+            // Generate 24-hour data
+            const hourlyData = [];
+            for (let hour = 0; hour < 24; hour++) {
+                hourlyData.push({
+                    hour: hour,
+                    entries: data[hour]?.entries || 0,
+                    exits: data[hour]?.exits || 0
+                });
+            }
+            
+            const maxValue = Math.max(...hourlyData.map(item => Math.max(item.entries, item.exits)));
+            if (maxValue === 0) {
+                drawNoDataMessage(ctx, width, height, 'No hourly data available');
+                return;
+            }
+            
+            const barWidth = chartWidth / 24 * 0.35;
+            
+            hourlyData.forEach((item, index) => {
+                const x = margin + index * (chartWidth / 24);
+                
+                // Draw entries bar
+                const entriesHeight = (item.entries / maxValue) * chartHeight;
+                const entriesY = height - margin - entriesHeight;
+                ctx.fillStyle = '#22c55e';
+                ctx.fillRect(x, entriesY, barWidth, entriesHeight);
+                
+                // Draw exits bar
+                const exitsHeight = (item.exits / maxValue) * chartHeight;
+                const exitsY = height - margin - exitsHeight;
+                ctx.fillStyle = '#ef4444';
+                ctx.fillRect(x + barWidth, exitsY, barWidth, exitsHeight);
+                
+                // Draw hour label every 4 hours
+                if (index % 4 === 0) {
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.font = '10px Inter';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(`${item.hour}:00`, x + barWidth, height - 5);
+                }
+            });
+            
+            // Draw legend
+            ctx.fillStyle = '#22c55e';
+            ctx.fillRect(20, 20, 12, 12);
+            ctx.fillStyle = '#e2e8f0';
+            ctx.font = '11px Inter';
+            ctx.textAlign = 'left';
+            ctx.fillText('Entries', 40, 29);
+            
+            ctx.fillStyle = '#ef4444';
+            ctx.fillRect(20, 40, 12, 12);
+            ctx.fillStyle = '#e2e8f0';
+            ctx.fillText('Exits', 40, 49);
+        }
+
+        function drawNoDataMessage(ctx, width, height, message) {
+            ctx.fillStyle = '#64748b';
+            ctx.font = '14px Inter';
+            ctx.textAlign = 'center';
+            ctx.fillText(message, width/2, height/2);
+        }
+
+        function updateStatValue(elementId, newValue) {
+            const element = document.getElementById(elementId);
+            const currentValue = parseInt(element.textContent) || 0;
+            
+            if (newValue !== currentValue) {
+                // Add animation class
+                element.style.transform = 'scale(1.1)';
+                element.style.transition = 'transform 0.2s ease';
+                
+                // Update value
+                element.textContent = newValue.toLocaleString();
+                
+                // Remove animation
+                setTimeout(() => {
+                    element.style.transform = 'scale(1)';
+                }, 200);
+            }
+        }
+
+        function updateStatusIndicator(elementId, isConnected) {
+            const element = document.getElementById(elementId);
+            element.className = `status-dot ${isConnected ? (elementId === 'mongoStatus' ? 'recording' : 'connected') : 'disconnected'}`;
+        }
+
+        function updateUptime() {
+            const uptime = Date.now() - startTime;
+            const hours = Math.floor(uptime / 3600000);
+            const minutes = Math.floor((uptime % 3600000) / 60000);
+            const seconds = Math.floor((uptime % 60000) / 1000);
+            
+            document.getElementById('uptime').textContent = 
+                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        async function searchVehicles() {
+            const searchInput = document.getElementById('searchInput');
+            const searchTerm = searchInput.value.trim();
+            const loadingSpinner = document.getElementById('searchLoading');
+            
+            if (!searchTerm) {
+                updateRecords();
+                return;
+            }
+            
+            // Show loading
+            loadingSpinner.style.display = 'inline-block';
+            
+            try {
+                const response = await fetch('/api/search_vehicles', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query: searchTerm })
+                });
+                
+                const data = await response.json();
+                
+                const tbody = document.getElementById('recordsTableBody');
+                tbody.innerHTML = '';
+                
+                if (data.records && data.records.length > 0) {
+                    data.records.forEach(record => {
+                        const row = createRecordRow(record);
+                        tbody.appendChild(row);
+                    });
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #94a3b8; padding: 30px;">No results found for "${searchTerm}"</td></tr>`;
+                }
+                
+            } catch (error) {
+                console.error('Error searching vehicles:', error);
+                document.getElementById('recordsTableBody').innerHTML = 
+                    '<tr><td colspan="7" style="text-align: center; color: #ff6b6b; padding: 30px;">Error searching records</td></tr>';
+            } finally {
+                loadingSpinner.style.display = 'none';
+            }
+        }
+
+        function refreshRecords() {
+            updateRecords();
+            updateCharts();
+            
+            // Visual feedback
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = '⟳ Refreshing...';
+            button.disabled = true;
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+            }, 1000);
+        }
+
+        async function exportData() {
+            try {
+                const response = await fetch('/api/export_vehicles');
+                const data = await response.json();
+                
+                // Create and download JSON file
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `vehicle_records_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                // Show success message
+                showNotification('📊 Data exported successfully!', 'success');
+                
+            } catch (error) {
+                console.error('Error exporting data:', error);
+                showNotification('❌ Export failed', 'error');
+            }
+        }
+
+        function viewStats() {
+            // Open analytics in fullscreen modal or new window
+            const analytics = document.querySelector('.analytics-section');
+            analytics.scrollIntoView({ behavior: 'smooth' });
+            
+            // Highlight analytics section
+            analytics.style.animation = 'highlight 2s ease';
+        }
+
+        async function resetSession() {
+            if (!confirm('Are you sure you want to reset the current session? This will clear session data but not the database.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/reset_session');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showNotification('🔄 Session reset successfully!', 'success');
+                    updateStats();  
+                    updateRecords();
+                } else {
+                    showNotification('❌ Reset failed', 'error');
+                }
+                
+            } catch (error) {
+                console.error('Error resetting session:', error);
+                showNotification('❌ Reset failed', 'error');
+            }
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 25px;
+                border-radius: 12px;
+                color: white;
+                font-weight: 600;
+                z-index: 1000;
+                animation: slideIn 0.3s ease;
+                background: ${type === 'success' ? 'linear-gradient(135deg, #22c55e, #16a34a)' : 'linear-gradient(135deg, #ef4444, #dc2626)'};
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        // Add CSS animations for notifications
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+            
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            
+            @keyframes highlight {
+                0%, 100% { box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3); }
+                50% { box-shadow: 0 15px 60px rgba(0, 212, 255, 0.4); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Enhanced keyboard shortcuts including fullscreen
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 'f':
+                        e.preventDefault();
+                        if (!isFullscreen) {
+                            document.getElementById('searchInput').focus();
+                        }
+                        break;
+                    case 'r':
+                        e.preventDefault();
+                        refreshRecords();
+                        break;
+                    case 'e':
+                        e.preventDefault();
+                        exportData();
+                        break;
+                }
+            } else {
+                switch(e.key) {
+                    case 'f':
+                    case 'F':
+                        e.preventDefault();
+                        toggleFullscreen();
+                        break;
+                    case 'Escape':
+                        if (isFullscreen) {
+                            exitFullscreen();
+                        }
+                        break;
+                }
+            }
+        });
+
+        // Add error handling for video feed
+        document.getElementById('videoFeed').addEventListener('error', function() {
+            this.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQwIiBoZWlnaHQ9IjM2MCIgdmlld0JveD0iMCAwIDY0MCAzNjAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI2NDAiIGhlaWdodD0iMzYwIiBmaWxsPSIjMWExYTJlIi8+Cjx0ZXh0IHg9IjMyMCIgeT0iMTgwIiBmaWxsPSIjNjQ3NDhiIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iSW50ZXIiIGZvbnQtc2l6ZT0iMjQiPkNhbWVyYSBGZWVkIFVuYXZhaWxhYmxlPC90ZXh0Pgo8L3N2Zz4=';
+            updateStatusIndicator('rtspStatus', false);
+        });
+
+        // Add error handling for fullscreen video
+        document.getElementById('fullscreenVideo').addEventListener('error', function() {
+            this.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQwIiBoZWlnaHQ9IjM2MCIgdmlld0JveD0iMCAwIDY0MCAzNjAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI2NDAiIGhlaWdodD0iMzYwIiBmaWxsPSIjMWExYTJlIi8+Cjx0ZXh0IHg9IjMyMCIgeT0iMTgwIiBmaWxsPSIjNjQ3NDhiIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iSW50ZXIiIGZvbnQtc2l6ZT0iMjQiPkNhbWVyYSBGZWVkIFVuYXZhaWxhYmxlPC90ZXh0Pgo8L3N2Zz4=';
+        });
+
+        // Add visibility change handling to pause/resume updates when tab is not visible
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                clearInterval(statsUpdateInterval);
+                clearInterval(recordsUpdateInterval);
+            } else {
+                statsUpdateInterval = setInterval(updateStats, 3000);
+                recordsUpdateInterval = setInterval(updateRecords, 5000);
+            }
+        });
+
+        console.log('🚗 Enhanced Vehicle Detection Dashboard Ready!');
+        console.log('📊 Features: Real-time stats, Entry/Exit tracking, Full car images, Advanced search');
+        console.log('🎮 Controls: Press F for fullscreen video, Ctrl+F for search, Ctrl+R to refresh');
+    </script>
+</body>
+</html>

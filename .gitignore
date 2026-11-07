@@ -1,0 +1,82 @@
+# ============================================================
+#  Vehicle License Plate Detection System — .gitignore
+# ============================================================
+
+# ----- Python -----
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+ENV/
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# ----- Jupyter -----
+.ipynb_checkpoints/
+*.ipynb
+
+# ----- Large model weights (use Git LFS or share separately) -----
+yolov8n.pt
+yolo11n.pt
+*.pt
+# Keep trained best.pt in runs/detect (tracked via Git LFS)
+# runs/detect/license_plate_detection/weights/best.pt
+
+# ----- Training dataset ZIP (too large for GitHub) -----
+*.zip
+
+# ----- YOLO Training outputs that are large -----
+runs/detect/*/weights/last.pt
+runs/detect/val/
+runs/detect/val2/
+runs/detect/val3/
+runs/detect/license_plate_detection2/
+
+# ----- Generated media & captures -----
+screenshots/
+car_images/
+plate_images/
+output*.mp4
+*.mp4
+*.avi
+
+# ----- Logs -----
+*.log
+detector.log
+
+# ----- MongoDB -----
+# (data lives in a local MongoDB instance; never commit DB files)
+*.bson
+
+# ----- OS artefacts -----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ----- IDE / Editor -----
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ----- Environment variables / secrets -----
+.env
+.env.*
+secrets.py
+config_local.py
+
+# ----- Misc -----
+*.tmp
+*.bak
+*.swp

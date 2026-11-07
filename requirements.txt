@@ -1,0 +1,27 @@
+# ============================================================
+#  Vehicle License Plate Detection System — Python Dependencies
+# ============================================================
+
+# Core Computer Vision & AI
+ultralytics>=8.0.0
+opencv-python>=4.8.0
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Image Processing
+Pillow>=10.0.0
+scipy>=1.11.0
+imutils>=0.5.4
+numpy>=1.24.0
+
+# OCR
+pytesseract>=0.3.10
+
+# Database
+pymongo>=4.5.0
+
+# Web Framework / Dashboard
+Flask>=3.0.0
+
+# Utilities
+pyyaml>=6.0

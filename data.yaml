@@ -1,0 +1,6 @@
+names:
+- License_Plate
+nc: 1
+test: D:/vehicle_speed/no_plate/License Plate Recognition.v4-resized640_aug3x-accurate.yolov8/test/images
+train: D:/vehicle_speed/no_plate/License Plate Recognition.v4-resized640_aug3x-accurate.yolov8/train/images
+val: D:/vehicle_speed/no_plate/License Plate Recognition.v4-resized640_aug3x-accurate.yolov8/valid/images
