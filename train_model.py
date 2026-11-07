@@ -3,11 +3,20 @@ import cv2
 import os
 import yaml
 
+# Load config (reads .env automatically)
+from config import DASHBOARD_DIR, MODEL_PATH
+
+# Dataset folder (relative to project root — portable across machines)
+DATASET_DIR = os.path.join(
+    DASHBOARD_DIR,
+    "License Plate Recognition.v4-resized640_aug3x-accurate.yolov8"
+)
+
 # Define dataset configuration
 dataset_config = {
-    'train': 'D:/vehicle_speed/no_plate/License Plate Recognition.v4-resized640_aug3x-accurate.yolov8/train/images',
-    'val': 'D:/vehicle_speed/no_plate/License Plate Recognition.v4-resized640_aug3x-accurate.yolov8/valid/images',
-    'test': 'D:/vehicle_speed/no_plate/License Plate Recognition.v4-resized640_aug3x-accurate.yolov8/test/images',
+    'train': os.path.join(DATASET_DIR, 'train', 'images'),
+    'val':   os.path.join(DATASET_DIR, 'valid', 'images'),
+    'test':  os.path.join(DATASET_DIR, 'test',  'images'),
     'nc': 1,
     'names': ['License_Plate']
 }

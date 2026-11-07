@@ -2,13 +2,14 @@ from pymongo import MongoClient
 from datetime import datetime, timedelta
 import logging
 
+# Load config (reads .env automatically)
+from config import MONGO_URI, MONGO_DB_NAME
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 # MongoDB Configuration
-MONGO_URI = "mongodb://localhost:27017"
-MONGO_DB_NAME = "license_plate_db"
 MONGO_COLLECTION_NAME = "plates"
 
 # Enhanced sample dataset with more realistic data
@@ -17,7 +18,7 @@ sample_plates = [
         "plate_number": "ABC1234",
         "timestamp": datetime(2025, 7, 31, 12, 0, 0),
         "confidence": 95.5,
-        "screenshot_path": "D:\\vehicle_speed\\no_plate\\screenshots\\HD_plate_JKL7890_20250731_113015_654.jpg",
+        "screenshot_path": "screenshots/HD_plate_JKL7890_20250731_113015_654.jpg",
         "created_at": datetime(2025, 7, 31, 11, 30, 15),
         "detection_id": "JKL7890_20250731_113015_654",
         "file_size_kb": 189.3,
@@ -29,7 +30,7 @@ sample_plates = [
         "plate_number": "MNO2468",
         "timestamp": datetime(2025, 7, 30, 16, 22, 45),
         "confidence": 94.1,
-        "screenshot_path": "D:\\vehicle_speed\\no_plate\\screenshots\\HD_plate_MNO2468_20250730_162245_987.jpg",
+        "screenshot_path": "screenshots/HD_plate_MNO2468_20250730_162245_987.jpg",
         "created_at": datetime(2025, 7, 30, 16, 22, 45),
         "detection_id": "MNO2468_20250730_162245_987",
         "file_size_kb": 267.9,

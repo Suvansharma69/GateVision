@@ -1,4 +1,4 @@
-# 🚗 Vehicle License Plate Detection System
+# 🚗 GateVision — Smart Vehicle Entry/Exit Intelligence System
 
 <div align="center">
 
@@ -9,8 +9,7 @@
 ![OpenCV](https://img.shields.io/badge/OpenCV-4.8-red?logo=opencv)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
-**A production-ready, real-time license plate detection and vehicle management system.**  
-Detects license plates from live RTSP camera streams, reads them with OCR, tracks vehicle entry/exit, and displays everything on a live web dashboard — all backed by MongoDB.
+**A production-ready, real-time vehicle intelligence system that detects license plates, tracks entry/exit events, logs timestamps, and streams everything to a live web dashboard — all backed by MongoDB.**
 
 </div>
 

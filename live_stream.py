@@ -1,11 +1,14 @@
 import cv2
+import os
 import time
 
-# RTSP URL format: rtsp://username:password@ip_address:port/path
-rtsp_url = "rtsp://camera:Rj18cb4820!@10.10.97.12:554/"
+# Load RTSP URL from config (reads .env automatically)
+from config import RTSP_STREAM
+
+print(f"🔗 Connecting to: {RTSP_STREAM}")
 
 # Create VideoCapture object
-cap = cv2.VideoCapture(rtsp_url)
+cap = cv2.VideoCapture(RTSP_STREAM)
 if not cap.isOpened():
     print("Error: Could not open RTSP stream")
     exit()

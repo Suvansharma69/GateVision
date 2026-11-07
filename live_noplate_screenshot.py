@@ -23,14 +23,15 @@ import concurrent.futures
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Set Tesseract executable path
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+# Load all configuration from config.py (reads .env automatically)
+from config import (
+    RTSP_STREAM, DASHBOARD_DIR, SCREENSHOTS_DIR,
+    MODEL_PATH, TESSERACT_CMD,
+    FLASK_HOST, FLASK_PORT
+)
 
-# --- CONFIGURATION ---
-MODEL_PATH = "runs/detect/license_plate_detection/weights/best.pt"
-DASHBOARD_DIR = r"D:\vehicle_speed\no_plate"
-SCREENSHOTS_DIR = os.path.join(DASHBOARD_DIR, "screenshots")
-RTSP_STREAM = "rtsp://camera:Rj18cb4820!@10.10.97.12:554/"
+# Set Tesseract executable path
+pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
 
 # Ensure directories exist
 os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
@@ -820,17 +821,16 @@ def main():
         
         if not reader.is_connected:
             logger.error("❌ Failed to connect to RTSP stream")
-            logger.error("🔧 Please check:")
-            logger.error(f"   - Camera IP: 10.10.97.12")
-            logger.error(f"   - RTSP Port: 554")
-            logger.error(f"   - Credentials: camera:Rj18cb4820!")
+            logger.error("🔧 Please check your RTSP_STREAM value in .env:")
+            logger.error(f"   - Current URL: {RTSP_STREAM}")
+            logger.error(f"   - Verify camera IP, port, username and password")
             logger.error(f"   - Network connectivity")
             return
         
         logger.info("🌐 Web Dashboard: http://localhost:5000")
         logger.info("🎯 System ready for HD quality captures!")
         
-        app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)
+        app.run(host=FLASK_HOST, port=FLASK_PORT, debug=False, threaded=True)
         
     except KeyboardInterrupt:
         logger.info("🛑 System stopped")

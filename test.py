@@ -37,27 +37,19 @@ import pymongo.errors
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# Load all configuration from config.py (reads .env automatically)
+from config import (
+    RTSP_STREAM, DASHBOARD_DIR, SCREENSHOTS_DIR, CAR_IMAGES_DIR, PLATE_IMAGES_DIR,
+    MODEL_PATH, YOLO_CAR_MODEL, TESSERACT_CMD,
+    MONGO_URI, MONGO_DB_NAME, MONGO_COLLECTION_NAME,
+    FLASK_HOST, FLASK_PORT
+)
+
 # Set Tesseract executable path
-# Make sure to update this path if Tesseract is installed elsewhere
 try:
-    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+    pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
 except Exception:
     logger.warning("Could not set Tesseract path. Ensure it's in your system's PATH.")
-
-
-# Enhanced Configuration - Optimized for Performance
-MODEL_PATH = "runs/detect/license_plate_detection/weights/best.pt"
-YOLO_CAR_MODEL = "yolov8n.pt"
-DASHBOARD_DIR = r"D:\vehicle_speed\no_plate"
-SCREENSHOTS_DIR = os.path.join(DASHBOARD_DIR, "screenshots")
-CAR_IMAGES_DIR = os.path.join(DASHBOARD_DIR, "car_images")
-PLATE_IMAGES_DIR = os.path.join(DASHBOARD_DIR, "plate_images")
-RTSP_STREAM = "rtsp://camera:Rj18cb4820!@10.10.97.12:554/"
-
-# MongoDB Configuration
-MONGO_URI = "mongodb://localhost:27017"
-MONGO_DB_NAME = "enhanced_vehicle_db"
-MONGO_COLLECTION_NAME = "vehicle_records"
 
 # Optimized Performance Configuration - NO FRAME SKIPPING
 MAX_QUEUE_SIZE = 5

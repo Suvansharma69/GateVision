@@ -37,23 +37,18 @@ import pymongo.errors
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# Load all configuration from config.py (reads .env automatically)
+from config import (
+    RTSP_STREAM, DASHBOARD_DIR, SCREENSHOTS_DIR, CAR_IMAGES_DIR, PLATE_IMAGES_DIR,
+    MODEL_PATH, YOLO_CAR_MODEL, TESSERACT_CMD,
+    MONGO_URI, MONGO_DB_NAME, MONGO_COLLECTION_NAME,
+    FLASK_HOST, FLASK_PORT
+)
+
 # Set Tesseract executable path
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
 
-# Enhanced Configuration
-MODEL_PATH = "runs/detect/license_plate_detection/weights/best.pt"
-YOLO_CAR_MODEL = "yolov8n.pt"  # Pre-trained YOLOv8 for car detection
-VEHICLE_ORIENTATION_MODEL = "yolov8n.pt"  # We'll use keypoint detection for orientation
-DASHBOARD_DIR = r"D:\vehicle_speed\no_plate"
-SCREENSHOTS_DIR = os.path.join(DASHBOARD_DIR, "screenshots")
-CAR_IMAGES_DIR = os.path.join(DASHBOARD_DIR, "car_images")
-PLATE_IMAGES_DIR = os.path.join(DASHBOARD_DIR, "plate_images")
-RTSP_STREAM = "rtsp://camera:Rj18cb4820!@10.10.97.12:554/"
-
-# MongoDB Configuration
-MONGO_URI = "mongodb://localhost:27017"
-MONGO_DB_NAME = "enhanced_vehicle_db"
-MONGO_COLLECTION_NAME = "vehicle_records"
+VEHICLE_ORIENTATION_MODEL = YOLO_CAR_MODEL
 
 # Enhanced Performance Configuration
 MAX_QUEUE_SIZE = 2

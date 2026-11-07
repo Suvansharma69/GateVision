@@ -1,11 +1,16 @@
 from ultralytics import YOLO
 import cv2
 import os
+import sys
 
-# Paths
-model_path = "runs/detect/license_plate_detection/weights/best.pt"  # Correct path to best.pt
-video_path = "D:/vehicle_speed/no_plate/sample.mp4"
-output_path = "D:/vehicle_speed/no_plate/output.mp4"
+# Load config (reads .env automatically)
+from config import MODEL_PATH, DASHBOARD_DIR
+
+# --- Video paths (pass as CLI args or set defaults here) ---
+# Usage: python detect_no_plate.py [input_video] [output_video]
+video_path  = sys.argv[1] if len(sys.argv) > 1 else os.path.join(DASHBOARD_DIR, "sample.mp4")
+output_path = sys.argv[2] if len(sys.argv) > 2 else os.path.join(DASHBOARD_DIR, "output.mp4")
+model_path  = MODEL_PATH
 
 # Load the trained YOLO model
 model = YOLO(model_path)

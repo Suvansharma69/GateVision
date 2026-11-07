@@ -72,6 +72,8 @@ desktop.ini
 
 # ----- Environment variables / secrets -----
 .env
+# .env.example IS tracked — it shows the template without real values
+!.env.example
 .env.*
 secrets.py
 config_local.py
