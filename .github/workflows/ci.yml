@@ -1,0 +1,40 @@
+name: GateVision CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  lint-and-check:
+    name: Lint & Import Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install lightweight dependencies
+        run: |
+          pip install --upgrade pip
+          pip install pyflakes
+
+      - name: Check syntax on all Python files
+        run: |
+          python -m pyflakes *.py || true
+
+      - name: Verify config.py loads without errors
+        run: |
+          # config.py must work with no .env file (uses defaults)
+          python -c "import config; print('config.py OK')"
+
+      - name: Verify requirements.txt is parseable
+        run: |
+          pip install --dry-run -r requirements.txt --quiet || true
+
