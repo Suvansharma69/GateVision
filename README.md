@@ -237,7 +237,7 @@ mongod --dbpath "C:\data\db"
 
 The model `runs/detect/license_plate_detection/weights/best.pt` (~5.4 MB) is excluded from git due to size.
 
-**Option A** — Download from [Releases](https://github.com/YOUR_USERNAME/GateVision/releases) page  
+**Option A** — Download from [**Releases → v1.0**](https://github.com/Suvansharma69/GateVision/releases/download/v1.0/best.pt) ⬇️  
 **Option B** — Train yourself: `python train_model.py` (see [Model Training](#-model-training))
 
 ---
